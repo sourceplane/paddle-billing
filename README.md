@@ -12,9 +12,9 @@ Postgres — running on **Cloudflare Workers + Static Assets** through
 applied by the `db-migrate` runner through
 [Orun](https://github.com/sourceplane/orun), the way
 [subscription-payments](https://github.com/sourceplane/subscription-payments)
-does it for Stripe, deployed by
-[Orun](https://github.com/sourceplane/orun) to stage and prod on every merge.
-Packaging it as an Orun baseline is the next milestone (PB2).
+does it for Stripe, and packaged as an **Orun baseline**: one command takes
+a new product from nothing to live on stage and prod, in its own repository,
+under its own name — in ONE landing.
 
 The template's code is the code, moved to Next.js 16 with only the changes
 Next.js 16 and Workers force. What a fresh, unattended deployment forces on
@@ -26,9 +26,61 @@ app deploys, signs users up, in and in as guests and renders the dashboard
 with no Paddle account, while pricing shows the plans with a notice instead
 of prices, checkout and the dashboard's Paddle views say Paddle is not
 connected, and the webhook answers 503; and both tables in `public` keep
-upstream's row-level security, checked by a migration of its own. See
+upstream's row-level security, checked by a migration of its own. What the
+baseline adds is everything needed to make a copy of it somebody else's,
+built the way [cirrus-baseline](https://github.com/sourceplane/cirrus-baseline)
+is. See
 [`specs/epics/paddle-billing`](specs/epics/paddle-billing/README.md) for the
 design, the milestones and the as-built status, including every departure.
+
+## Instantiating a product
+
+```bash
+git clone --depth 1 --branch <baseline-tag> https://github.com/sourceplane/paddle-billing
+cd paddle-billing
+orun new --blueprint repo-blueprint.yaml --out ~/products/acme-pay --run-hooks --resume \
+  --set reponame=acme-pay --set productname="Acme Cloud" \
+  --set githuborg=acme-inc --set subdomain=<workers-dev-subdomain>
+```
+
+Or, once the platform's registry lists it, from the Orun console (Baselines →
+`paddle-billing` → Build). Two phases: **`01-product`** creates the
+repository, mints the four brokered credentials (Cloudflare and Supabase)
+and lands the whole product as one pull request, whose convergence on
+`main` provisions and deploys it per environment in a fixed order —
+
+```
+supabase ──▶ db-migrate ──▶ web
+```
+
+— each edge `mode: enforced` on a push to main and advisory on a pull
+request; then **`02-docs`** records the live deployment from probed facts.
+The Supabase organization needs room for **two** projects (stage and prod;
+its free plan allows exactly two active ones).
+**[BOOTSTRAP.md](BOOTSTRAP.md)** is the operator guide;
+[docs/phases/](docs/phases/README.md) has a page per phase.
+
+The new repository receives the **product only** — the app, the Terraform
+root, the migrations, the tests, its CI, its tooling, a README of its own
+and its operating contract — renamed throughout to the product's name,
+repository, Worker and Supabase project. None of this repository's machinery
+ships. **Paddle is the owner's to connect afterwards** (the product's README,
+"Connecting Paddle"): no platform brokers it, so the card asks for no Paddle
+key. Neither is GitHub sign-in, nor Supabase Auth's email: the project signs
+new users straight in until its owner gives it SMTP (the product's README,
+"Supabase Auth email").
+
+| What makes it a baseline | Where |
+|---|---|
+| The console card (inputs, secrets, programme) | `blueprint.yaml` |
+| The build document (modules, phases, hooks) | `repo-blueprint.yaml` |
+| This tree's identity, the product's README and the bootstrap's task contracts | `.baseline/` |
+| The rename engine (product-name seam: `apps/web/src/utils/site.ts`) | `tooling/rebrand/rebrand.mjs` |
+| The bootstrap's helpers (deferrals, redeploy marker, work-tree strip) | `tooling/bootstrap/` |
+| The deployment-record renderer | `hooks/render-deployment-docs.sh` |
+| The product's context pack | `ai/context/` |
+| The baseline's tests: contract, leak, offline bootstrap and plans, end to end | `testing/`, `.github/workflows/baseline.yml` |
+| Cutting a `baseline-vN` tag | `.github/workflows/tag.yml` |
 
 ## What is here (the product)
 
@@ -80,3 +132,5 @@ carries.
 | Workflow | What it runs | Ships to a product |
 |---|---|---|
 | `ci.yml` | the Orun pipeline, and the only workflow a product carries: `orun plan --changed`, then one job per lane. A pull request runs the verify lanes (the app built and dry-deployed per environment, the Terraform root checked and planned, the migrations planned; the packages and the two test suites only installed and their structure checked), except the bootstrap's own landings (`orun/BASE-*`), where `plan` alone runs and nothing waits for it — the landing was checked in the build box; a merge applies, migrates and deploys stage → prod. Typecheck, lint and the tests run in `baseline.yml`'s e2e tier on the landing before every tag, and in a product as the `pnpm` scripts its developers run before they push. It plans nothing while `intent.yaml` names the placeholder workspace `ws_CHANGE_ME`, as this repository does. A manual run (Orunbase's Deploy button, or Run workflow on `main`) plans the environment and components it names under the push-to-main trigger, so they deploy as a merge deploys them | yes |
+| `baseline.yml` | the baseline's own tiers: contract tests; the blueprint read by the pinned orun, the leak gate, the offline bootstrap and the product's own plans; the product built, migrated into a local Supabase (its real Auth and Data API), dry-deployed, served, signed up, out and in on and logged in as a guest, and its webhook verified and synced | no |
+| `tag.yml` | cuts a `baseline-vN` tag (manual) | no |

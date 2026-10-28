@@ -9,7 +9,7 @@ metadata:
 spec:
   title: "Paddle's Next.js starter kit on Cloudflare Workers and Supabase"
   summary: "Paddle's Next.js starter kit, Vercel's Paddle Billing Subscription Starter — a three-tier pricing page localized by Paddle.js, an inline Paddle Checkout, Supabase Auth with email, guest and GitHub sign-in, a dashboard of the customer's subscriptions and payments, and the webhook that syncs customers and subscriptions into Postgres — run on Cloudflare Workers + Static Assets through @opennextjs/cloudflare, with a Supabase project per environment from Terraform and the template's schema applied by db-migrate behind row-level security; Paddle connected by its owner after the build, as the product's own optional secrets; and become an Orun baseline that takes a new product from nothing to live on stage and prod in one landing."
-  state: started
+  state: completed
   milestones:
     - name: "PB0 — the spec"
       exitCriteria:
