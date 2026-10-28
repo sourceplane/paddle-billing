@@ -1,0 +1,14 @@
+# paddle-billing — risks and open questions
+
+| ID | Risk | State | Notes |
+|---|---|---|---|
+| PB-A | `baseline-v1` is not yet proven live | OPEN | Proven offline in Baseline CI: the offline bootstrap with the blueprint's own hooks, the lanes' own steps in staged job trees (the migrations applied through a stand-in Supabase Management API over a real Postgres, under the real Supabase Auth and Data API), and the built Worker served by `wrangler dev` over it. A live bootstrap needs a workspace with Cloudflare and Supabase connected and room for two Supabase projects (PB-F); the supabase root's reads of the API keys and writes of the Auth settings (anonymous sign-ins among them) with the brokered token are subscription-payments' open SP-M |
+| PB-B | No Paddle account has been connected | OPEN | Paddle.js (prices, checkout) from the Worker's origin, the SDK's API calls from the Worker (subscriptions, transactions, cancel) and real deliveries are unproven; the SDK uses `fetch` and its verifier ran on real signatures under `wrangler dev`. Closes with a Paddle sandbox connected to a live product |
+| PB-C | Next.js 16's `proxy.ts` on OpenNext | ACCEPTED | `opennextjs-cloudflare build` says Node.js middleware support is experimental and not maintained by OpenNext. subscription-payments and ai-chatbot run the same shape; the e2e tier serves every page through it |
+| PB-D | The SDK compares signatures with `===` | ACCEPTED | Not a constant-time comparison; the five-second window and an HMAC over the body make a timing attack over the network impractical. The template's verifier, kept (design §5) |
+| PB-E | Anonymous sign-ins on by default | ACCEPTED | The template's log-in page offers a guest login. Anyone can create a user; Supabase recommends a CAPTCHA. `authAnonymousSignIns: "false"` with the button removed turns it off (the product's README) |
+| PB-F | Two Supabase projects per product | ACCEPTED | Stage and prod are a project each; the free plan allows two active projects per organization. BOOTSTRAP.md lists it as a prerequisite |
+| PB-G | The e2e tier needs PostgreSQL and downloads real Supabase binaries | ACCEPTED | GoTrue and PostgREST, pinned and checksummed, are Linux binaries: the tier runs on Baseline CI (ubuntu-latest carries PostgreSQL), not on a Mac without psql |
+| PB-H | A removed Paddle secret stays on the Worker | ACCEPTED | The deploy pushes the keys that exist and deletes none; `wrangler secret delete` removes one (the product's README) |
+| PB-I | The template's logo and icons are AeroEdit's marks | ACCEPTED | They are images; the name (`SITE_NAME`) is text everywhere it appears. The product's README says where to replace them |
+| PB-J | The guest's email is upstream's `aeroedit+<time>@paddle.com` | ACCEPTED | So Paddle's checkout has an address for a guest, at Paddle's own domain, as upstream does it |

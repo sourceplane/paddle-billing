@@ -1,0 +1,30 @@
+# The epic's declaration. metadata.name equals the directory name; metadata.key
+# is the task-key prefix this epic reserves (PB → PB-1, PB-2, …). Owner, target
+# date and health are the platform's — never written here.
+apiVersion: orun.io/v1
+kind: Epic
+metadata:
+  name: paddle-billing
+  key: PB
+spec:
+  title: "Paddle's Next.js starter kit on Cloudflare Workers and Supabase"
+  summary: "Paddle's Next.js starter kit, Vercel's Paddle Billing Subscription Starter — a three-tier pricing page localized by Paddle.js, an inline Paddle Checkout, Supabase Auth with email, guest and GitHub sign-in, a dashboard of the customer's subscriptions and payments, and the webhook that syncs customers and subscriptions into Postgres — run on Cloudflare Workers + Static Assets through @opennextjs/cloudflare, with a Supabase project per environment from Terraform and the template's schema applied by db-migrate behind row-level security; Paddle connected by its owner after the build, as the product's own optional secrets; and become an Orun baseline that takes a new product from nothing to live on stage and prod in one landing."
+  state: started
+  milestones:
+    - name: "PB0 — the spec"
+      exitCriteria:
+        - "the repository is born with its intent, CI, tooling and spec index, and this doc set and the task contracts are on main"
+      tasks: [PB-1]
+    - name: "PB1 — the billing starter on Workers and Supabase"
+      exitCriteria:
+        - "apps/web is the template on Next.js 16.3.8, built by OpenNext into one Worker, reaching its Supabase project through supabase-js with the keys of one wiring document per environment"
+        - "the template's two migrations and a row-level security check are packages/db migrations, applied by db-migrate; the Supabase root provisions stage and prod, anonymous sign-ins on for the guest login"
+        - "with no Paddle key the site builds, deploys and serves — the plans with a notice, checkout and the dashboard saying Paddle is not connected, the webhook 503 — and with Paddle's keys, stored as the product's optional secrets, the webhook verifies and syncs"
+        - "`pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` are green"
+      tasks: [PB-2]
+    - name: "PB2 — a baseline"
+      exitCriteria:
+        - "blueprint.yaml (the console card) and repo-blueprint.yaml (the build) take a new product from nothing to live on stage and prod in one landing, then record it"
+        - "a product built from it carries the product only, renamed throughout to its own name, repository, Worker and Supabase project"
+        - "Baseline CI is green: contract tests, generated component docs, the blueprint read by the pinned orun, the leak gate, the offline bootstrap and the end-to-end tier"
+      tasks: [PB-3]
