@@ -10,7 +10,7 @@ one landing.**
 
 | | |
 |---|---|
-| Status | In progress — PB1 on main: the site runs on Workers |
+| Status | ✅ Shipped (`baseline-v1`) — proven offline in Baseline CI; not yet live (risks PB-A, PB-B) |
 | Upstream | [PaddleHQ/paddle-nextjs-starter-kit](https://github.com/PaddleHQ/paddle-nextjs-starter-kit) (Apache-2.0), Vercel's [Paddle Billing Subscription Starter](https://vercel.com/templates/next.js/paddle-billing-subscription-starter), at `da90482` |
 | Reference | [subscription-payments](https://github.com/sourceplane/subscription-payments) — Supabase Auth and its Data API, one wiring document, the Supabase root, db-migrate through the Management API, row-level security checked, a billing provider connected after the build |
 | Key | `PB` |

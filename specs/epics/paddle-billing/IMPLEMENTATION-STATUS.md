@@ -4,7 +4,7 @@
 |---|---|---|
 | PB0 — the spec | ✅ | PB-1 |
 | PB1 — the billing starter on Workers and Supabase | ✅ | PB-2 |
-| PB2 — a baseline | planned | PB-3 |
+| PB2 — a baseline | ✅ | PB-3, tagged `baseline-v1` |
 
 ## Departures from the upstream template
 
