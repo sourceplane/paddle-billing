@@ -1,0 +1,22 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: PB-2
+  title: "The billing starter on Workers and Supabase"
+spec:
+  goal: Paddle's Next.js starter kit runs on Cloudflare Workers + Static Assets with a Supabase project per environment, its schema as migrations applied by db-migrate behind row-level security, the Supabase root provisioning stage and prod, and Paddle connected after the build as the product's optional secrets
+  affects:
+    - apps/web
+    - packages/db
+    - infra
+    - tests
+    - tooling/migrations
+    - tooling/wire
+    - pnpm-lock.yaml
+    - pnpm-workspace.yaml
+    - README.md
+    - .gitignore
+  doneWhen:
+    - pnpm typecheck, lint, test and build are green
+    - the built Worker serves the site over a migrated project with Paddle not connected, and verifies and syncs the webhook once its secret is set
+  gates: []

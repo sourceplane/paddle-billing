@@ -1,0 +1,27 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: PB-3
+  title: "paddle-billing becomes an Orun baseline"
+spec:
+  goal: blueprint.yaml and repo-blueprint.yaml take a new subscription product from nothing to live on stage and prod in one landing, held by Baseline CI
+  affects:
+    - blueprint.yaml
+    - repo-blueprint.yaml
+    - BOOTSTRAP.md
+    - .baseline
+    - .github/workflows/baseline.yml
+    - .github/workflows/tag.yml
+    - ai/context
+    - docs/phases
+    - hooks
+    - testing
+    - tooling/rebrand
+    - tooling/bootstrap
+    - tooling/catalog
+    - specs/epics/paddle-billing
+    - README.md
+  doneWhen:
+    - every Baseline CI tier is green
+    - a product placed from it carries the product only, branded
+  gates: []

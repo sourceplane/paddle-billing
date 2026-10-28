@@ -7,5 +7,6 @@ folder is the adoption; the merge creates the epic in the workspace.
 
 | Epic | Cluster | Status | What it is |
 |------|---------|--------|------------|
+| [`paddle-billing/`](./paddle-billing/) | **PB** | In progress (PB0) | Paddle's Next.js starter kit — localized pricing, Paddle Checkout, Supabase Auth with a guest login, a billing dashboard and the webhook — on Cloudflare Workers with a Supabase project per environment, and an Orun baseline that instantiates it in one landing (PB2) |
 
 As-built ≠ intent: what shipped lives in each epic's `IMPLEMENTATION-STATUS.md`.
