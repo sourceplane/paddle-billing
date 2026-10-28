@@ -10,3 +10,13 @@ onlyBuiltDependencies:
   - esbuild
   - workerd
   - sharp
+
+# tests/db runs the migrations in PGlite (Postgres compiled to WASM). One
+# version, pinned: the app never imports it, and a test database must not
+# float to whatever was published yesterday.
+overrides:
+  "@electric-sql/pglite": "0.5.8"
+  # The template's own pins (its package.json `pnpm.overrides`): one React
+  # types version across every package.
+  "@types/react": "19.1.13"
+  "@types/react-dom": "19.1.9"

@@ -1,0 +1,26 @@
+# Local Worker secrets for `wrangler dev` / `opennextjs-cloudflare preview`.
+# Copy to .dev.vars (git-ignored); never commit a value.
+#
+# The service-role key: server code only (the Paddle webhook's sync and
+# /api/health). In stage and prod every deploy sets it as a Worker secret from
+# the Supabase root's wiring document; here it is yours.
+SUPABASE_SERVICE_ROLE_KEY=
+#
+# Paddle's server-side keys. Unset, the dashboard's subscription and payment
+# views say "Paddle is not connected." and the webhook answers 503. In stage
+# and prod they are the product's Orun secrets, which the deploy pushes to the
+# Worker as Worker secrets (README, "Connecting Paddle").
+# PADDLE_API_KEY=pdl_sdbx_apikey_***
+# PADDLE_NOTIFICATION_WEBHOOK_SECRET=pdl_ntfset_***
+#
+# Paddle's public values — the client-side token and the environment — are
+# read by the BROWSER, so `next build` inlines them: export them before
+# `pnpm build` (or put them in .env.local for `next dev`), not here.
+# NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=test_***
+# NEXT_PUBLIC_PADDLE_ENV=sandbox
+#
+# The Supabase URL and anon key, and the site's origin, are wrangler vars
+# (rendered into wrangler.jsonc, which the build inlines); put real values
+# here only to point a local Worker at a real project's server side.
+# NEXT_PUBLIC_SUPABASE_URL=
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=

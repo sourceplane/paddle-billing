@@ -1,0 +1,22 @@
+{
+  "extends": "../../tooling/tsconfig/web.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["node"],
+    // The app's files are typechecked through these imports under the app's
+    // own strictness (its tsconfig has no noUncheckedIndexedAccess), by the
+    // app's own alias (`@/*` is apps/web/src/*); next.config.mjs is the one
+    // module outside src/ (next-config.d.ts types it).
+    "noUncheckedIndexedAccess": false,
+    "baseUrl": "../../apps/web",
+    "paths": {
+      "@/next.config.mjs": ["./next.config.mjs"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}
