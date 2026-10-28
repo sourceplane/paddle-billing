@@ -1,0 +1,48 @@
+// wrangler.template.jsonc is the source and wrangler.jsonc is rendered from
+// it by tooling/wire: edit the template, never the render. Two renders:
+//
+//   - committed: the render from wiring.fixture.json (`pnpm run wire:fixture`),
+//     a placeholder project URL and key. `wrangler dev`, the dev verify lane
+//     and the composition's structure check (which runs BEFORE the build, in a
+//     fresh checkout) all read it, so it has to exist without a build. Edit
+//     this file and re-render; tests/web fails when the two disagree.
+//   - deployed: the stage and prod lanes re-render it inside their own job
+//     tree, before the build, from the wiring document the `supabase`
+//     Terraform root lease-publishes (WIRING_SUPABASE_<ENV>,
+//     apps/web/component.yaml).
+//
+// `next build` reads the vars below from whichever render it finds
+// (next.config.mjs) and inlines them into the browser bundle, so the browser
+// and the Worker always talk to the same project. The workers-assets
+// composition deploys one environment per job with no wrangler `--env`, so
+// a placeholder token names the environment a render is for.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "paddle-billing-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+  // The Supabase project the Worker talks to, under the template's own env
+  // names, and the Worker's own origin (`siteUrl()`: the GitHub sign-in's
+  // return address, the metadata base). The anon key is public by design —
+  // row-level security protects the data — so it is a var, not a secret.
+  // Locally, apps/web/.dev.vars overrides any of them.
+  //
+  // Not here, by design: SUPABASE_SERVICE_ROLE_KEY is a Worker SECRET. It
+  // travels in the same wiring document, and the deploy lane pushes it to
+  // the Worker with `wrangler secret bulk` (tooling/wire/secrets.mjs) — it
+  // never enters a wrangler file or a bundle. So are Paddle's two server-side
+  // keys, PADDLE_API_KEY and PADDLE_NOTIFICATION_WEBHOOK_SECRET: the owner
+  // stores them as the product's Orun secrets and the same tool pushes them
+  // once they exist (.dev.vars.example).
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@@wiring(supabase/__ENV__:supabase_url)@@",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@@wiring(supabase/__ENV__:supabase_anon_key)@@",
+    "NEXT_PUBLIC_SITE_URL": "https://paddle-billing-web-__ENV__.your-workers-subdomain.workers.dev"
+  }
+}

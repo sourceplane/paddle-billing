@@ -1,0 +1,134 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: web
+  description: Paddle's Next.js starter kit — Supabase Auth, a localized pricing page, Paddle Checkout, subscription and payment pages and the webhook that syncs customers and subscriptions (Next.js on Cloudflare Workers + Static Assets via @opennextjs/cloudflare, per environment)
+spec:
+  type: cloudflare-workers-assets-turbo
+  lifecycle: production
+  owner: platform
+  # Its pages, attached to it in the workspace's catalog: what the Docs
+  # library shows for it, and what the catalog's docs and runbook checks read.
+  # Generated from what this manifest and its sources declare.
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture, title: Architecture }
+      - { path: docs/runbook.md, role: runbook, title: Runbook }
+  # `app`, not `web`: a domain and a component share one name space in the
+  # catalog, and a domain called `web` hid this component from it.
+  domain: app
+  path: apps/web
+  # Its own lane per environment: the Next.js build is the longest job in the
+  # plan, and a shared lane would wait on it.
+  lane: isolated
+  # INFRA BEFORE APP, ENFORCED ON MAIN. A merge to main converges the whole
+  # product in one run: the Supabase project, then the migrations, then this
+  # Worker. Its deploy reads the project's URL and keys
+  # (WIRING_SUPABASE_<ENV>, rendered into wrangler.jsonc and pushed as a
+  # Worker secret) and needs the schema applied, and a job resolves its
+  # secrets when it STARTS — so it waits on both, `mode: enforced`, and the
+  # document the supabase apply lease-published is there. A pull request
+  # deploys nothing, so nothing on one waits: every edge is advisory there.
+  dependsOn:
+    - component: supabase
+      mode: enforced
+      modeRules:
+        - mode: advisory
+          when:
+            triggerRef: github-pull-request
+    - component: db-migrate
+      mode: enforced
+      modeRules:
+        - mode: advisory
+          when:
+            triggerRef: github-pull-request
+  # Paddle, the owner's to connect (README → Connecting Paddle): stored per
+  # environment as the product's secrets under upstream's names. The two
+  # server-side keys never reach a bundle — the deploy pushes the ones that
+  # exist to the Worker as Worker secrets (tooling/wire/secrets.mjs
+  # --optional-env) — and the two public ones are read by the browser, so
+  # `next build` inlines them. BEST-EFFORT references, wire-now-seed-later: a
+  # key nobody has stored yet is skipped when the job resolves its secrets (no
+  # env var, no failure), and a build without them is the site with Paddle not
+  # connected — sign-up, sign-in and the dashboard work, prices, checkout and
+  # the subscription views say so, the webhook answers 503 — so a fresh
+  # product deploys and serves before its owner has a Paddle account at all.
+  optionalSecretEnv:
+    PADDLE_API_KEY: "secret://paddle-billing/paddle-billing/{{ .environment }}/PADDLE_API_KEY"
+    PADDLE_NOTIFICATION_WEBHOOK_SECRET: "secret://paddle-billing/paddle-billing/{{ .environment }}/PADDLE_NOTIFICATION_WEBHOOK_SECRET"
+    NEXT_PUBLIC_PADDLE_CLIENT_TOKEN: "secret://paddle-billing/paddle-billing/{{ .environment }}/NEXT_PUBLIC_PADDLE_CLIENT_TOKEN"
+    NEXT_PUBLIC_PADDLE_ENV: "secret://paddle-billing/paddle-billing/{{ .environment }}/NEXT_PUBLIC_PADDLE_ENV"
+  subscribe:
+    environments:
+      # dev verifies with the committed fixture render and reads no wiring.
+      - name: dev
+        profile: verify
+      # Each deployed environment reads ITS OWN wiring document (Lumen's
+      # scoping): stage never waits on prod's project to exist, and dev
+      # resolves no credential it could never use.
+      - name: stage
+        profile: verify
+        secretEnv:
+          WIRING_SUPABASE_STAGE: "secret://paddle-billing/paddle-billing/stage/WIRING_SUPABASE"
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+      - name: prod
+        profile: verify
+        secretEnv:
+          WIRING_SUPABASE_PROD: "secret://paddle-billing/paddle-billing/prod/WIRING_SUPABASE"
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+
+    workspaceDir: ../..
+    appDir: .
+
+    turboFilter: "@app/web"
+    wranglerConfig: wrangler.jsonc
+
+    # @opennextjs/cloudflare emits a Worker entrypoint plus a static-assets
+    # directory bound via ASSETS — both deploy in one `wrangler deploy`.
+    workerEntrypoint: .open-next/worker.js
+    assetsDir: .open-next/assets
+
+    # Per-env worker name: paddle-billing-web-{dev,stage,prod}.
+    workerName: paddle-billing-web
+    environmentAwareWorkerName: true
+
+    # The account's workers.dev subdomain; exported to the smoke step as
+    # ${WORKERS_DEV_SUBDOMAIN} and used to build ${DEPLOYED_URL}.
+    workersDevSubdomain: your-workers-subdomain
+
+    installCommand: pnpm install --frozen-lockfile
+    # wrangler.jsonc is COMMITTED — the fixture render, so the composition's
+    # structure check (`test -f wrangler.jsonc`, before the build, in a fresh
+    # checkout) passes. Stage and prod re-render it here, in their own job
+    # tree, from this environment's wiring document — the project URL, the
+    # anon key and the Worker's origin, which `next build` inlines
+    # (next.config.mjs) — then build, then hand the document's service-role
+    # key, and Paddle's server-side keys once the owner has stored them, to
+    # the Worker as SECRETS (tooling/wire/secrets.mjs: `wrangler secret
+    # bulk`, the values over stdin). Only the deploy lane holds a
+    # Cloudflare credential, so a verify lane renders and builds the same and
+    # pushes nothing. dev verifies with the fixture and has no wiring.
+    buildCommand: if [ "${ORUN_ENVIRONMENT}" != dev ]; then node ../../tooling/wire/live.mjs --template wrangler.template.jsonc --out wrangler.jsonc --components supabase --env "${ORUN_ENVIRONMENT}"; fi && pnpm exec turbo run build --filter=@app/web && if [ "${ORUN_ENVIRONMENT}" != dev ]; then node ../../tooling/wire/secrets.mjs --component supabase --env "${ORUN_ENVIRONMENT}" --secret SUPABASE_SERVICE_ROLE_KEY=supabase_service_role_key --optional-env PADDLE_API_KEY --optional-env PADDLE_NOTIFICATION_WEBHOOK_SECRET --worker "paddle-billing-web-${ORUN_ENVIRONMENT}" --config wrangler.jsonc; fi
+
+    # Smoke: the pricing page renders its plans (each "Get started" links to
+    # its checkout, with Paddle connected or not), and /api/health answers
+    # ok — the
+    # Supabase project reachable with the keys the Worker was built with, the
+    # schema migrated, and the service-role secret the project's own. Each
+    # response is buffered before grep so an early match cannot SIGPIPE curl.
+    smokeCommand: "html=$(curl -sfL \"${DEPLOYED_URL}/\") && echo \"${html}\" | grep -q 'href=\"/checkout/' && health=$(curl -sf \"${DEPLOYED_URL}/api/health\") && echo \"${health}\" | grep -q '\"ok\":true'"
+  labels:
+    team: platform
+    layer: delivery
+    surface: web
+    runtime: cloudflare
